@@ -1,0 +1,18 @@
+name: ChatAnnouncer
+main: com.martinbrook.ChatAnnouncer.ChatAnnouncer
+version: 0.1
+description: A plugin to broadcast predefined scripts in chat
+commands:
+ chatannouncer:
+  description: Chatannouncer commands, type /ca help for full details
+  aliases: ca
+ muteall:
+  description: Enable/disable global chat mute
+permissions:
+ chatscript.broadcast:
+  description: Allows you to broadcast ChatScript announcements
+  default: op
+ chatscript.speakwhenmuted:
+  description: Allows you to speak, even when chat is muted
+  default: op
+  
