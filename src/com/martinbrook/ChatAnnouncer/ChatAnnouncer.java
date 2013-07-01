@@ -45,6 +45,7 @@ public class ChatAnnouncer extends JavaPlugin {
     }
     
     private String cChatannouncer(String[] args) {
+    	if (this.chatScript != null) return ERROR_COLOR + "Announcement already in progress. Please wait.";
 		String scriptFile;
 		if (args.length < 1)
 			scriptFile = "announcement.txt"; 
@@ -104,8 +105,15 @@ public class ChatAnnouncer extends JavaPlugin {
 		String line;
 		while (chatScript.size() > 0) {
 			line=chatScript.remove(0);
-			if (line.equalsIgnoreCase("&pause")) {
-				continueChatScript(80L);
+			if (line.toLowerCase().startsWith("&pause")) {
+				int pauseDuration;
+				try {
+					pauseDuration = Integer.parseInt(line.substring(6).trim());
+				} catch (NumberFormatException e) {
+					pauseDuration = 2;
+				}
+				
+				continueChatScript(20L * pauseDuration);
 				return;
 			}
 			getServer().broadcastMessage(parseLine(line));
