@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -18,6 +20,8 @@ public class ChatAnnouncer extends JavaPlugin {
 	
 	public static final ChatColor MAIN_COLOR = ChatColor.GREEN, SIDE_COLOR = ChatColor.GOLD, OK_COLOR = ChatColor.GREEN, WARN_COLOR = ChatColor.LIGHT_PURPLE, ERROR_COLOR = ChatColor.RED,
 			DECISION_COLOR = ChatColor.GOLD, ALERT_COLOR = ChatColor.GREEN;
+	
+	public static final Pattern commandPattern = Pattern.compile("\\[\\&(\\w+)\\]");	
 	
 	@Override
     public void onEnable() {
@@ -47,7 +51,7 @@ public class ChatAnnouncer extends JavaPlugin {
 		else
 			scriptFile = args[0];
 		this.playChatScript(scriptFile, true);
-		return OK_COLOR + "Starting chat announcement";
+		return OK_COLOR + "Broadcasting " + SIDE_COLOR + scriptFile;
     }
 
 
@@ -79,28 +83,66 @@ public class ChatAnnouncer extends JavaPlugin {
 		if (muteChat) this.setChatMuted(true);
 		chatScript = this.readFile(filename);
 		if (chatScript != null)
-			continueChatScript();
+			continueChatScript(1L);
 	}
 	
-	/**
-	 * Output next line of current chat script, unmuting the chat if it's finished.
-	 */
-	private void continueChatScript() {
-		getServer().broadcastMessage(ChatColor.GREEN + chatScript.get(0));
-		chatScript.remove(0);
+	private void continueChatScript(Long delay) {
 		if (chatScript.size() > 0) {
 			getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
 				public void run() {
-					continueChatScript();
+					playNextLines();
 				}
-			}, 30L);
-		} else {
-			this.setChatMuted(false);
-			chatScript = null;
+			}, delay);
 		}
+	}
+		
+		
+	/**
+	 * Output next line of current chat script, unmuting the chat if it's finished.
+	 */
+	private void playNextLines() {
+		String line;
+		while (chatScript.size() > 0) {
+			line=chatScript.remove(0);
+			if (line.equalsIgnoreCase("&pause")) {
+				continueChatScript(80L);
+				return;
+			}
+			getServer().broadcastMessage(parseLine(line));
+		}
+		this.setChatMuted(false);
+		chatScript = null;
+	}
+	
+	/**
+	 * Converts color codes from input into Bukkit chat colors.
+	 * 
+	 * @return input string with Bukkit color codes parsed
+	 */
+	private String parseLine(String input) {
+		Matcher m = commandPattern.matcher(input);
+		StringBuffer sb = new StringBuffer();
+		while(m.find()) {
+			String commandResult = processCommand(m.group(1).toLowerCase());
+			if (commandResult != null) {
+				m.appendReplacement(sb, commandResult);
+			}
+		}
+		m.appendTail(sb);
+		return sb.toString();
 		
 	}
     
+	private String processCommand(String command) {
+		// Try for a color code
+		try {
+			ChatColor color = ChatColor.valueOf(command.toUpperCase());
+			return color.toString();
+		} catch (IllegalArgumentException e) {
+		}
+		return null;
+		
+	}
 	/**
 	 * @return Whether chat is currently muted
 	 */
